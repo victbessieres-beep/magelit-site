@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magelit</title>
+    <link rel="icon" type="image/png" href="./images/logo_magelit.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-main: #1a1a1a;
+            --bg-panel: #2d2d2d;
+            --bg-button: #3a3a3a;
+            --text-main: #ffffff;
+            --text-secondary: #ffffff;
+            --border-color: #4a4a4a;
+            --bg-3d: #1a1a1a;
+        }
+
+        body.light-mode {
+            --bg-main: #f5f5f5;
+            --bg-panel: #ffffff;
+            --bg-button: #e0e0e0;
+            --text-main: #111111;
+            --text-secondary: #111111;
+            --border-color: #cccccc;
+            --bg-3d: #f9f6f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: var(--bg-main);
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #sidebar {
+            width: 280px;
+            background: var(--bg-panel);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #sidebar h2 {
+            color: var(--text-main);
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #4A90A4;
+            padding-bottom: 10px;
+        }
+
+        #sidebar h3 {
+            color: var(--text-secondary);
+        }
+
+        .model-button {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--bg-button);
+            color: var(--text-main);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .model-button:hover {
+            background: #4a4a4a;
+            border-color: #4A90A4;
+            transform: translateX(5px);
+        }
+
+        .model-button.active {
+            background: #4A90A4;
+            border-color: #4A90A4;
+            color: #ffffff;
+        }
+
+        #viewer {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 40px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        #upload-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        #upload-section h3 {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        #theme-toggle {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: var(--bg-button);
+            color: var(--text-main);
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        #theme-toggle:hover {
+            background: #4A90A4;
+            color: #ffffff;
+        }
+
+        #upload-button {
+            width: 100%;
+            padding: 12px;
+            background: #2196F3;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+
+        #upload-button:hover {
+            background: #1976D2;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="sidebar">
+            <h2>📦 Modèles 3D</h2>
+            <button id="theme-toggle">
+             🌙 / ☀️ Mode
+            </button>
+            <div id="model-list">
+                <!-- Les boutons seront générés dynamiquement -->
+            </div>
+            
+            <div id="upload-section">
+                <h3>Charger un modèle</h3>
+                <input type="file" id="file-input" accept=".glb,.gltf,.obj,.fbx,.stl">
+                <button id="upload-button">📁 Choisir un fichier</button>
+            </div>
+        </div>
+
+        <div id="viewer">
+            <div id="canvas-container"></div>
+            <div id="loading">
+                <div class="spinner"></div>
+                Chargement du modèle...
+            </div>
+            <div id="info">
+                🖱️ Clic gauche: rotation | Molette: zoom | Clic droit: déplacer
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+
+        // Configuration de la scène Three.js
+        let scene, camera, renderer, controls;
+        let currentModel = null;
+        const themeBtn = document.getElementById("theme-toggle");
+
+        // Charger thème sauvegardé
+        if (localStorage.getItem("theme") === "light") {
+            document.body.classList.add("light-mode");
+        }
+
+        themeBtn.addEventListener("click", () => {
+            document.body.classList.toggle("light-mode");
+
+            const mode = document.body.classList.contains("light-mode") ? "light" : "dark";
+            localStorage.setItem("theme", mode);
+
+            // 🔥 Met à jour le fond 3D avec la bonne couleur
+            const bgColor = mode === "light" ? '#f9f6f0' : '#1a1a1a';
+            scene.background = new THREE.Color(bgColor);
+        });
+
+        // Liste des modèles disponibles 
+        // (on peut en rajouter en gardant le même modèle
+        //  et en déposant les fichiers dans le dossier)
+        const models = [
+            {
+                name: "Tête de lit Maison hausmanienne",
+                type: "gltf",
+                url: "./models/tete-lit_maison.glb"
+            },
+            {
+                name: "Tête de lit Jungle",
+                type: "gltf",
+                url: "./models/tete-lit_jungle.glb"
+            },
+            {
+                name: "Tête de lit test",
+                type: "gltf",
+                url: "./models/tête-lit_test.glb"
+            }
+        ];
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scène
+            scene = new THREE.Scene();
+            // Déterminer la couleur en fonction du mode
+            const isLightMode = document.body.classList.contains("light-mode");
+            const bgColor = isLightMode ? '#f9f6f0' : '#1a1a1a';
+            scene.background = new THREE.Color(bgColor);
+
+            // Caméra
+            camera = new THREE.PerspectiveCamera(
+                75,
+                container.clientWidth / container.clientHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 2, 5);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Contrôles
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lumières
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 5, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 0.3);
+            pointLight.position.set(-5, 3, -5);
+            scene.add(pointLight);
+
+            // Gestion du redimensionnement
+            window.addEventListener('resize', onWindowResize);
+
+            // Générer les boutons
+            generateModelButtons();
+
+            // Charger le premier modèle
+            loadModel(models[0]);
+
+            // Gestion de l'upload
+            document.getElementById('upload-button').addEventListener('click', () => {
+                document.getElementById('file-input').click();
+            });
+
+            document.getElementById('file-input').addEventListener('change', handleFileUpload);
+
+            animate();
+        }
+
+        function generateModelButtons() {
+            const modelList = document.getElementById('model-list');
+            
+            models.forEach((model, index) => {
+                const button = document.createElement('button');
+                button.className = 'model-button';
+                button.textContent = model.name;
+                button.onclick = () => {
+                    loadModel(model);
+                    document.querySelectorAll('.model-button').forEach(btn => 
+                        btn.classList.remove('active')
+                    );
+                    button.classList.add('active');
+                };
+                
+                if (index === 0) {
+                    button.classList.add('active');
+                }
+                
+                modelList.appendChild(button);
+            });
+        }
+
+        function loadModel(modelData) {
+            showLoading(true);
+
+            // Supprimer l'ancien modèle
+            if (currentModel) {
+                scene.remove(currentModel);
+            }
+
+            if (modelData.type === "gltf") {
+                const loader = new GLTFLoader();
+                loader.load(
+                    modelData.url,
+                    (gltf) => {
+                        currentModel = gltf.scene;
+
+                        currentModel.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+
+                        scene.add(currentModel);
+                        centerCamera(currentModel);
+                        showLoading(false);
+                    },
+                    undefined,
+                    (error) => {
+                        console.error("Erreur chargement modèle :", error);
+                        showLoading(false);
+                    }
+                );
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showLoading(true);
+
+            const extension = file.name.split('.').pop().toLowerCase();
+            
+            if (extension === 'glb' || extension === 'gltf') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    
+                    const manager = new THREE.LoadingManager();
+                    const loader = new GLTFLoader(manager);
+                    
+                    loader.parse(arrayBuffer, '', (gltf) => {
+                        if (currentModel) {
+                            scene.remove(currentModel);
+                        }
+                        currentModel = gltf.scene;
+                        
+                        currentModel.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                                
+                                if (child.material) {
+                                    if (Array.isArray(child.material)) {
+                                        child.material.forEach(mat => {
+                                            mat.needsUpdate = true;
+                                        });
+                                    } else {
+                                        child.material.needsUpdate = true;
+                                    }
+                                }
+                            }
+                        });
+                        
+                        scene.add(currentModel);
+                        centerCamera(currentModel);
+                        showLoading(false);
+                    }, 
+                    (error) => {
+                        console.error('Erreur de chargement:', error);
+                        alert('Erreur lors du chargement du modèle GLB/GLTF.');
+                        showLoading(false);
+                    });
+                };
+                
+                reader.onerror = function(error) {
+                    console.error('Erreur de lecture du fichier:', error);
+                    alert('Erreur lors de la lecture du fichier');
+                    showLoading(false);
+                };
+                
+                reader.readAsArrayBuffer(file);
+                
+            } else if (extension === 'obj') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const loader = new OBJLoader();
+                        const object = loader.parse(e.target.result);
+                        
+                        if (currentModel) {
+                            scene.remove(currentModel);
+                        }
+                        
+                        object.traverse((child) => {
+                            if (child instanceof THREE.Mesh) {
+                                if (!child.material) {
+                                    child.material = new THREE.MeshStandardMaterial({ 
+                                        color: 0x888888,
+                                        metalness: 0.3,
+                                        roughness: 0.5
+                                    });
+                                }
+                            }
+                        });
+                        
+                        currentModel = object;
+                        scene.add(currentModel);
+                        centerCamera(currentModel);
+                        showLoading(false);
+                    } catch (error) {
+                        console.error('Erreur de parsing OBJ:', error);
+                        alert('Erreur lors du chargement du modèle OBJ: ' + error.message);
+                        showLoading(false);
+                    }
+                };
+                
+                reader.onerror = function(error) {
+                    console.error('Erreur de lecture du fichier:', error);
+                    alert('Erreur lors de la lecture du fichier');
+                    showLoading(false);
+                };
+                
+                reader.readAsText(file);
+                
+            } else {
+                alert('Format de fichier non supporté. Utilisez .glb, .gltf ou .obj');
+                showLoading(false);
+            }
+            
+            event.target.value = '';
+        }
+
+        function centerCamera(object) {
+            const box = new THREE.Box3().setFromObject(object);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / Math.tan(fov / 2)) * 1.5;
+            
+            camera.position.set(center.x, center.y + maxDim * 0.5, center.z + cameraZ);
+            controls.target.copy(center);
+            controls.update();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Initialisation
+        init();
+    </script>
+</body>
+</html>
